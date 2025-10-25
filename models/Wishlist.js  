@@ -1,0 +1,26 @@
+const mongoose = require('mongoose');
+
+const wishlistSchema = new mongoose.Schema(
+  {
+    // Tham chiếu 1-1 với User (mỗi user có 1 wishlist riêng)
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      unique: true
+    },
+
+    // Nhúng & tham chiếu: mảng chứa các Product ID
+    products: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Product'
+      }
+    ],
+
+    itemCount: { type: Number, default: 0 } // tổng số sản phẩm
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model('Wishlist', wishlistSchema);

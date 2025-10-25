@@ -1,0 +1,66 @@
+const mongoose = require('mongoose');
+
+const userSchema = new mongoose.Schema(
+  {
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true
+    },
+    passwordHash: {
+      type: String,
+      required: true // bảo mật (đã mã hóa trước khi lưu)
+    },
+
+    // Thông tin phụ (profile)
+    profile: {
+      fullName: { type: String, default: '' },
+      phone: { type: String, default: '' }
+    },
+
+    // 🛒 Tham chiếu 1-1: Giỏ hàng (Cart)
+    cart: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Cart'
+    },
+
+    // 📦 Tham chiếu N-N: danh sách các Order ID
+    orders: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Order'
+      }
+    ],
+
+    // 💝 Tham chiếu 1-1: Wishlist của người dùng
+    wishlist: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Wishlist'
+    },
+
+    // 📝 Tham chiếu N-N: Review mà user đã viết (tùy chọn)
+    reviews: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Review'
+      }
+    ],
+
+    // ⚙️ Phân quyền
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user'
+    }
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model('User', userSchema);
