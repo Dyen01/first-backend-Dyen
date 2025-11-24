@@ -1,33 +1,21 @@
-// index.js
-const express = require('express');
-const dotenv = require('dotenv');
-const connectDB = require('./db');
-const userRoutes = require('./routes/userRoutes');
-
-// 🟢 Nạp biến môi trường (.env)
-dotenv.config();
-
+require("dotenv").config();
+const express = require("express");
 const app = express();
-const PORT = process.env.PORT || 3001;
+const connectDB = require("./db");
 
-// 🟢 Kết nối MongoDB Atlas
-connectDB();
+// routers
+const userRoutes = require("./routes/userRoutes");
+const authRoutes = require("./routes/authRoutes");
 
-// 🧩 Middleware đọc JSON
 app.use(express.json());
 
-// 🔗 Định tuyến API
-app.use('/api/v1/users', userRoutes);
+// API routes
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/users", userRoutes);
 
-// 🏠 Route kiểm tra server
-app.get('/', (req, res) => {
-  res.status(200).json({
-    message: 'Hello from first-backend-Dyen 💕',
-    server: 'OK',
-  });
-});
+// connect DB
+connectDB();
 
-// 🚀 Khởi động server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+app.listen(process.env.PORT, () => {
+    console.log("Server running on port", process.env.PORT);
 });
