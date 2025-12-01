@@ -4,10 +4,10 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-// Hàm tạo token
+// Tạo token
 function createToken(user) {
     return jwt.sign(
-        { id: user._id, username: user.username },
+        { id: user._id, fullName: user.fullName, role: user.role },
         process.env.JWT_SECRET,
         { expiresIn: "7d" }
     );
@@ -16,15 +16,14 @@ function createToken(user) {
 /* -------------------- REGISTER -------------------- */
 router.post("/register", async (req, res) => {
     try {
-        const { username, email, password } = req.body;
+        const { fullName, email, password } = req.body;
 
-        // kiểm tra trùng email
         const exists = await User.findOne({ email });
         if (exists) {
             return res.status(400).json({ message: "Email đã tồn tại" });
         }
 
-        const user = await User.create({ username, email, password });
+        const user = await User.create({ fullName, email, password });
 
         const token = createToken(user);
 
@@ -42,14 +41,12 @@ router.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Lấy cả mật khẩu (vì password có select: false)
-        const user = await User.findOne({ email }).select("+password");
+        const user = await User.findOne({ email });
 
         if (!user) {
             return res.status(400).json({ message: "Email không tồn tại" });
         }
 
-        // So sánh mật khẩu
         const match = await bcrypt.compare(password, user.password);
         if (!match) {
             return res.status(401).json({ message: "Mật khẩu không đúng" });
