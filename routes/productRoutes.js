@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Product = require("../models/Product");
-const { protect, authorize } = require("../middlewares/auth");
+const { protect, authorize } = require("../middleware/authMiddleware");
 
 // GET Public
 router.get("/", async (req, res) => {

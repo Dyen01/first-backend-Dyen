@@ -6,39 +6,32 @@ const connectDB = require("./db");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const productRoutes = require("./routes/productRoutes");
+const orderRoutes = require("./routes/orderRoutes");
 
+// Middleware lỗi
+const errorHandler = require("./middleware/errorMiddleware");
+
+// ✅ PHẢI TẠO APP TRƯỚC
 const app = express();
 
 // Middlewares
 app.use(express.json());
 app.use(express.static("public"));
 
-// API routes
+// Routes
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/products", productRoutes);
+app.use("/api/v1/orders", orderRoutes);
 
-// Connect Database
+// Error handler – LUÔN LUÔN CUỐI
+app.use(errorHandler);
+
+// Connect DB
 connectDB();
 
-// Port
+// Start server
 const PORT = process.env.PORT || 5000;
-
-// Tự động thử cổng nếu bị chiếm
-function startServer(port) {
-    const server = app.listen(port, () => {
-        console.log(`Server running on port ${port}`);
-    });
-
-    server.on("error", (err) => {
-        if (err.code === "EADDRINUSE") {
-            console.log(`Cổng ${port} đang được sử dụng. Thử cổng ${port + 1}...`);
-            startServer(port + 1);
-        } else {
-            console.error(err);
-        }
-    });
-}
-
-// Bắt đầu server
-startServer(Number(PORT));
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
