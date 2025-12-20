@@ -1,46 +1,51 @@
 const express = require("express");
 const router = express.Router();
-
 const User = require("../models/User");
-const { protect } = require("../middleware/authMiddleware");
-const upload = require("../middleware/uploadMiddleware");
-const cloudinary = require("../utils/cloudinary");
 
-// ==============================
-// GET PROFILE
-// ==============================
-router.get("/me", protect, async (req, res, next) => {
-    try {
-        res.json(req.user);
-    } catch (error) {
-        next(error);
-    }
+// CREATE
+router.post("/", async (req, res) => {
+  try {
+    const user = await User.create(req.body);
+    res.status(201).json(user);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
-// ==============================
-// UPLOAD AVATAR
-// ==============================
-router.post(
-    "/upload-avatar",
-    protect,
-    upload.single("avatar"),
-    async (req, res, next) => {
-        try {
-            const result = await cloudinary.uploader.upload(req.file.path, {
-                folder: "avatars"
-            });
+// READ ALL
+router.get("/", async (req, res) => {
+  const users = await User.find();
+  res.json(users);
+});
 
-            req.user.avatarUrl = result.secure_url;
-            await req.user.save();
+// READ ONE
+router.get("/:id", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(user);
+  } catch {
+    res.status(400).json({ message: "Invalid ID" });
+  }
+});
 
-            res.json({
-                message: "Upload avatar thành công",
-                avatar: result.secure_url
-            });
-        } catch (error) {
-            next(error);
-        }
-    }
-);
+// UPDATE
+router.put("/:id", async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    res.json(user);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// DELETE
+router.delete("/:id", async (req, res) => {
+  await User.findByIdAndDelete(req.params.id);
+  res.status(204).end();
+});
 
 module.exports = router;

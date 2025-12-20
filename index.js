@@ -1,24 +1,18 @@
+require("dotenv").config();
 const express = require("express");
+const connectDB = require("./db");
+
+const userRoutes = require("./routes/userRoutes");
 
 const app = express();
-const PORT = 3000;
+app.use(express.json());
 
-// Route gốc
-app.get("/", (req, res) => {
-  res.status(200).json({
-    message: "Server is running",
-  });
-});
+connectDB();
 
-// API status (bài tập tuần 02)
-app.get("/api/v1/status", (req, res) => {
-  res.status(200).json({
-    status: "OK",
-    message: "Server is working fine",
-  });
-});
+app.use("/api/v1/users", userRoutes);
 
-// Chạy server
-app.listen(PORT, () => {
-  console.log(`✅ Server đang chạy tại http://localhost:${PORT}`);
-});
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () =>
+  console.log(`Server running on port ${PORT}`)
+);
+
