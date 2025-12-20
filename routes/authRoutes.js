@@ -1,72 +1,65 @@
-const express = require("express");
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
-const User = require("../models/User");
-
+const express = require('express');
 const router = express.Router();
+const User = require('../models/User');
 
-// Hàm tạo token
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: "7d",
-  });
-};
+const { protect, authorize } = require('../middleware/authMiddleware');
 
-// REGISTER
-router.post("/register", async (req, res) => {
-  try {
-    const { username, email, password } = req.body;
-
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ message: "Email đã tồn tại" });
-    }
-
-    const user = await User.create({
-      username,
-      email,
-      password,
+// =======================
+// GET /api/v1/users/me
+// User đã đăng nhập
+// =======================
+router.get('/me', protect, async (req, res) => {
+    res.status(200).json({
+        message: 'Lấy thông tin cá nhân thành công',
+        data: req.user
     });
-
-    res.status(201).json({
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-      },
-      token: generateToken(user._id),
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
 });
 
-// LOGIN
-router.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    const user = await User.findOne({ email }).select("+password");
-    if (!user) {
-      return res.status(401).json({ message: "Sai email hoặc mật khẩu" });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ message: "Sai email hoặc mật khẩu" });
-    }
-
-    res.json({
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-      },
-      token: generateToken(user._id),
+// =======================
+// GET /api/v1/users
+// Admin only
+// =======================
+router.get('/', protect, authorize('admin'), async (req, res) => {
+    const users = await User.find();
+    res.status(200).json({
+        message: 'Lấy danh sách user (Admin)',
+        count: users.length,
+        data: users
     });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+});
+
+// =======================
+// GET /api/v1/users/:id
+// Admin only
+// =======================
+router.get('/:id', protect, authorize('admin'), async (req, res) => {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+        return res.status(404).json({ message: 'Không tìm thấy user' });
+    }
+    res.json(user);
+});
+
+// =======================
+// PUT /api/v1/users/:id
+// Admin only
+// =======================
+router.put('/:id', protect, authorize('admin'), async (req, res) => {
+    const user = await User.findByIdAndUpdate(
+        req.params.id,
+        req.body,
+        { new: true, runValidators: true }
+    );
+    res.json(user);
+});
+
+// =======================
+// DELETE /api/v1/users/:id
+// Admin only
+// =======================
+router.delete('/:id', protect, authorize('admin'), async (req, res) => {
+    await User.findByIdAndDelete(req.params.id);
+    res.status(204).send();
 });
 
 module.exports = router;
