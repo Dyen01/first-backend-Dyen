@@ -1,37 +1,24 @@
-require("dotenv").config();
 const express = require("express");
-const connectDB = require("./db");
 
-// Routers
-const authRoutes = require("./routes/authRoutes");
-const userRoutes = require("./routes/userRoutes");
-const productRoutes = require("./routes/productRoutes");
-const orderRoutes = require("./routes/orderRoutes");
-
-// Middleware lỗi
-const errorHandler = require("./middleware/errorMiddleware");
-
-// ✅ PHẢI TẠO APP TRƯỚC
 const app = express();
+const PORT = 3000;
 
-// Middlewares
-app.use(express.json());
-app.use(express.static("public"));
+// Route gốc
+app.get("/", (req, res) => {
+  res.status(200).json({
+    message: "Server is running",
+  });
+});
 
-// Routes
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/users", userRoutes);
-app.use("/api/v1/products", productRoutes);
-app.use("/api/v1/orders", orderRoutes);
+// API status (bài tập tuần 02)
+app.get("/api/v1/status", (req, res) => {
+  res.status(200).json({
+    status: "OK",
+    message: "Server is working fine",
+  });
+});
 
-// Error handler – LUÔN LUÔN CUỐI
-app.use(errorHandler);
-
-// Connect DB
-connectDB();
-
-// Start server
-const PORT = process.env.PORT || 5000;
+// Chạy server
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Server đang chạy tại http://localhost:${PORT}`);
 });
