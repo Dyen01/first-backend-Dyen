@@ -1,42 +1,36 @@
 const express = require('express');
 const router = express.Router();
-const Product = require('../models/Product');
+const multer = require('multer');
+const cloudinary = require('../utils/cloudinary');
 const { protect, authorize } = require('../middleware/authMiddleware');
+const Product = require('../models/Product');
+
+const upload = multer({ dest: 'uploads/' });
 
 // =======================
-// PUBLIC – xem sản phẩm
+// POST /products (ADMIN)
 // =======================
-router.get('/', async (req, res) => {
-    const products = await Product.find();
-    res.json(products);
-});
+router.post(
+    '/',
+    protect,
+    authorize('admin'),
+    upload.single('image'),
+    async (req, res, next) => {
+        try {
+            const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+                folder: 'products'
+            });
 
-// =======================
-// ADMIN – tạo sản phẩm
-// =======================
-router.post('/', protect, authorize('admin'), async (req, res) => {
-    const product = await Product.create(req.body);
-    res.status(201).json(product);
-});
+            const product = await Product.create({
+                ...req.body,
+                imageUrl: uploadResult.secure_url
+            });
 
-// =======================
-// ADMIN – cập nhật sản phẩm
-// =======================
-router.put('/:id', protect, authorize('admin'), async (req, res) => {
-    const product = await Product.findByIdAndUpdate(
-        req.params.id,
-        req.body,
-        { new: true, runValidators: true }
-    );
-    res.json(product);
-});
-
-// =======================
-// ADMIN – xóa sản phẩm
-// =======================
-router.delete('/:id', protect, authorize('admin'), async (req, res) => {
-    await Product.findByIdAndDelete(req.params.id);
-    res.status(200).json({ message: 'Đã xóa sản phẩm' });
-});
+            res.status(201).json(product);
+        } catch (error) {
+            next(error);
+        }
+    }
+);
 
 module.exports = router;
