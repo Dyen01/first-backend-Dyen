@@ -1,63 +1,72 @@
 const express = require("express");
-const router = express.Router();
-const User = require("../models/User");
-const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+const User = require("../models/User");
 
-// Tạo token
-function createToken(user) {
-    return jwt.sign(
-        { id: user._id, fullName: user.fullName, role: user.role },
-        process.env.JWT_SECRET,
-        { expiresIn: "7d" }
-    );
-}
+const router = express.Router();
 
-/* -------------------- REGISTER -------------------- */
+// Hàm tạo token
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
+  });
+};
+
+// REGISTER
 router.post("/register", async (req, res) => {
-    try {
-        const { fullName, email, password } = req.body;
+  try {
+    const { username, email, password } = req.body;
 
-        const exists = await User.findOne({ email });
-        if (exists) {
-            return res.status(400).json({ message: "Email đã tồn tại" });
-        }
-
-        const user = await User.create({ fullName, email, password });
-
-        const token = createToken(user);
-
-        res.status(201).json({
-            message: "Đăng ký thành công",
-            token
-        });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ message: "Email đã tồn tại" });
     }
+
+    const user = await User.create({
+      username,
+      email,
+      password,
+    });
+
+    res.status(201).json({
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+      },
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
-/* -------------------- LOGIN -------------------- */
+// LOGIN
 router.post("/login", async (req, res) => {
-    try {
-        const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-        const user = await User.findOne({ email });
-
-        if (!user) {
-            return res.status(400).json({ message: "Email không tồn tại" });
-        }
-
-        const match = await bcrypt.compare(password, user.password);
-        if (!match) {
-            return res.status(401).json({ message: "Mật khẩu không đúng" });
-        }
-
-        const token = createToken(user);
-        res.json({ message: "Đăng nhập thành công", token });
-
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+    const user = await User.findOne({ email }).select("+password");
+    if (!user) {
+      return res.status(401).json({ message: "Sai email hoặc mật khẩu" });
     }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Sai email hoặc mật khẩu" });
+    }
+
+    res.json({
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+      },
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 module.exports = router;
